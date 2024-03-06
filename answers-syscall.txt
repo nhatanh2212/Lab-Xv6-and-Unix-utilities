@@ -1,0 +1,47 @@
+Looking at the backtrace output, which function called syscall?
+=> The backtrace output is: 
+#0  syscall () at kernel/syscall.c:133
+#1  0x0000000080001d72 in usertrap () at kernel/trap.c:67
+#2  0x0000000000000036 in ?? ()
+=> The function that call syscall is usertrap() in kernel/trap.call 
+--------------------------------------------------------------------------------------
+What is the value of p->trapframe->a7 and what does that value represent? (Hint: look user/initcode.S, the first user program xv6 starts.)
+(gdb) p p->trapframe->a7
+$3 = 7
+=> p->trapframe->a7 = 7
+=> Meaning: In the user/initcode.S file, a7 is assigned the SYS_exec number, which is equal to 7 in syscall.h 
+--------------------------------------------------------------------------------------
+What was the previous mode that the CPU was in?
+(gdb) p /t $sstatus
+$3 = 100010
+=> The sstatus register keeps track of the processor’s current operating state. The SPP bit indicates the privilege level at which a hart was executing before entering supervisor
+mode. When a trap is taken, SPP is set to 0 if the trap originated from user mode, or 1 otherwise.
+=> The last bit is 0, which means the previous mode is user mode.
+----------------------------------------------------------------
+Write down the assembly instruction the kernel is panicing at. Which register corresponds to the variable num?
+=>    0x80002052 <syscall+20> lw      a3,0(zero) # 0x0
+=> register a3 is corresponding to variable num 
+----------------------------------------------------------------
+Why does the kernel crash? Hint: look at figure 3-3 in the text; is address 0 mapped in the kernel address space? Is that confirmed by the value in scause above? (See description of scause in RISC-V privileged instructions)
+(gdb) p $scause
+$2 = 13
+=> Number 13 here represents a load page fault. An error occurred while loading data from memory address 0 into a3.
+=> The address range 0x0:0x80000000 in the RISCV machine contains I/O devices so address 0 isn't mapped in the kernel address space.
+----------------------------------------------------------------
+What is the name of the binary that was running when the kernel paniced? What is its process id (pid)?
+(gdb) p p->name
+$2 = "initcode\000\000\000\000\000\000\000"
+=> The user process was running when the kernel paniced is initcode.
+(gdb) p *p
+$3 = {lock = {locked = 0, name = 0x800081b8 "proc", cpu = 0x0}, 
+  state = RUNNING, chan = 0x0, killed = 0, xstate = 0, pid = 1, 
+  parent = 0x0, kstack = 274877894656, sz = 4096, 
+  pagetable = 0x87f73000, trapframe = 0x87f74000, context = {
+    ra = 2147488962, sp = 274877898352, s0 = 274877898400, 
+    s1 = 2147519856, s2 = 2147518784, s3 = 1, s4 = 274877898448, 
+    s5 = 2147544056, s6 = 3, s7 = 2147588624, s8 = 1, s9 = 2147588920, 
+    s10 = 4, s11 = 0}, ofile = {0x0 <repeats 16 times>}, 
+  cwd = 0x80016e80 <itable+24>, 
+  name = "initcode\000\000\000\000\000\000\000"}
+  => Its pid is 1
+
